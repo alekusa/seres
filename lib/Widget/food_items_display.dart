@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:demo/Provider/favorite_provider.dart';
 import 'package:demo/views/detalle.dart';
-//import 'package:demo/views/recipe_detail.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 
