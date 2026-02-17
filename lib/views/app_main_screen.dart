@@ -1,12 +1,11 @@
-import 'package:demo/views/audio.dart';
-import 'package:demo/views/favorite_screen.dart';
-import 'package:demo/views/fechas_taller.dart';
-import 'package:demo/views/my_app_home_screen.dart';
-//import 'package:demo/views/video_promo.dart';
-//import 'package:demo/views/video_promo.dart';
+import 'package:SERES/views/audio.dart';
+import 'package:SERES/views/favorite_screen.dart';
+import 'package:SERES/views/fechas_taller.dart';
+import 'package:SERES/views/my_app_home_screen.dart';
+//import 'package:SERES/views/video_promo.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:demo/Utils/constant.dart';
+import 'package:SERES/Utils/constant.dart';
 
 class AppMainScreen extends StatefulWidget {
   const AppMainScreen({super.key});

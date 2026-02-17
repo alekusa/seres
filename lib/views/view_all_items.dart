@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:demo/Utils/constant.dart';
-import 'package:demo/Widget/food_items_display.dart';
-import 'package:demo/Widget/my_icon_button.dart';
+import 'package:SERES/Utils/constant.dart';
+import 'package:SERES/Widget/food_items_display.dart';
+import 'package:SERES/Widget/my_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 

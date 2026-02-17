@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 // }
 
 class SimpleExampleApp extends StatefulWidget {
-  const SimpleExampleApp();
+  const SimpleExampleApp({super.key});
 
   @override
   _SimpleExampleAppState createState() => _SimpleExampleAppState();

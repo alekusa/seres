@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:demo/Provider/favorite_provider.dart';
-import 'package:demo/Utils/constant.dart';
-import 'package:demo/Widget/my_icon_button.dart';
+import 'package:SERES/Provider/favorite_provider.dart';
+import 'package:SERES/Utils/constant.dart';
+import 'package:SERES/Widget/my_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -60,9 +60,7 @@ class _DetailScreenState extends State<DetailScreen> {
     player.setReleaseMode(ReleaseMode.stop);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await player.setSourceUrl(
-        widget.documentSnapshot['audio'],
-      );
+      await player.setSourceUrl(widget.documentSnapshot['audio']);
       await player.resume();
     });
     _playerState = player.state;
@@ -289,11 +287,12 @@ class _DetailScreenState extends State<DetailScreen> {
     setState(() => _playerState = PlayerState.paused);
   }
 
-  Future<void> _stop() async {
-    await player.stop();
-    setState(() {
-      _playerState = PlayerState.stopped;
-      _position = Duration.zero;
-    });
-  }
+  //STOP no se utiliza por ahora
+  // Future<void> _stop() async {
+  //   await player.stop();
+  //   setState(() {
+  //     _playerState = PlayerState.stopped;
+  //     _position = Duration.zero;
+  //   });
+  // }
 }

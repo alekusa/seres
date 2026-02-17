@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Demo</string>
+	<string>SERES</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>demo</string>
+	<string>SERES</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -46,8 +46,21 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
-	<true/>
-	<key>NSAllowsArbitraryLoads</key>
-	<true/>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<!-- TODO: Reemplaza esto con el valor de REVERSED_CLIENT_ID de tu GoogleService-Info.plist -->
+				<string>com.googleusercontent.apps.5694579953-kg8kgcbi2t3kae2h0e2nafidjfmqhs03</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

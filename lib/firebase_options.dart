@@ -64,7 +64,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '5694579953',
     projectId: 'seres-fd5ea',
     storageBucket: 'seres-fd5ea.firebasestorage.app',
-    iosBundleId: 'com.example.demo',
+    iosBundleId: 'com.example.SERES',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -73,7 +73,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '5694579953',
     projectId: 'seres-fd5ea',
     storageBucket: 'seres-fd5ea.firebasestorage.app',
-    iosBundleId: 'com.example.demo',
+    iosBundleId: 'com.example.SERES',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

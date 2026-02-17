@@ -1,4 +1,4 @@
-name: demo
+name: SERES
 description: "A new Flutter project."
 
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
@@ -15,10 +15,12 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
+  cloud_firestore: ^6.0.1
   cupertino_icons: ^1.0.8
-  firebase_core: ^3.15.1
+  firebase_core: ^4.1.0
+  firebase_auth: ^6.0.2
+  google_sign_in: ^6.2.2
   provider: ^6.1.5
-  cloud_firestore: ^5.6.11
   video_player: ^2.10.0
   intl: ^0.20.2
   audioplayers: ^6.5.0
@@ -28,11 +30,6 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^5.0.0
 
 # For information on the generic Dart part of this file, see the
