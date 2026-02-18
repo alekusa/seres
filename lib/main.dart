@@ -1,5 +1,6 @@
 import 'package:SERES/Provider/favorite_provider.dart';
 import 'package:SERES/Provider/quantity.dart';
+import 'package:SERES/Provider/user_provider.dart'; // Added
 import 'package:SERES/views/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -9,15 +10,28 @@ import 'package:SERES/views/app_main_screen.dart';
 import 'package:flutter/material.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    print('Starting app initialization...');
+    WidgetsFlutterBinding.ensureInitialized();
+    print('WidgetsFlutterBinding initialized');
 
-  // Disable App Verification for testing (solves some simulator issues)
-  await FirebaseAuth.instance.setSettings(
-    appVerificationDisabledForTesting: true,
-  );
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('Firebase initialized');
 
-  runApp(const MyApp());
+    // Disable App Verification for testing (solves some simulator issues)
+    await FirebaseAuth.instance.setSettings(
+      appVerificationDisabledForTesting: true,
+    );
+    print('FirebaseAuth settings updated');
+
+    runApp(const MyApp());
+    print('runApp executed');
+  } catch (e, stack) {
+    print('CRASH IN MAIN: $e');
+    print('STACK TRACE: $stack');
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -28,6 +42,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => FavoriteProvider()),
         ChangeNotifierProvider(create: (_) => QuantityProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
       ],
       child: MaterialApp(
         title: 'SERES',

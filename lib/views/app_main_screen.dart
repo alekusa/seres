@@ -1,8 +1,7 @@
-import 'package:SERES/views/audio.dart';
+import 'package:SERES/views/user.dart';
 import 'package:SERES/views/favorite_screen.dart';
 import 'package:SERES/views/fechas_taller.dart';
 import 'package:SERES/views/my_app_home_screen.dart';
-//import 'package:SERES/views/video_promo.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:SERES/Utils/constant.dart';
@@ -23,7 +22,7 @@ class _AppMainScreenState extends State<AppMainScreen> {
       const MyAppHomeScreen(),
       FavoriteScreen(),
       FehcasTaller(),
-      SimpleExampleApp(),
+      const UserScreen(),
       //VideoApp(),
       //navBarPage(Iconsax.setting_21),
     ];
