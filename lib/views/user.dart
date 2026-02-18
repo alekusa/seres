@@ -32,9 +32,39 @@ class _UserScreenState extends State<UserScreen> {
         actions: [
           IconButton(
             icon: const Icon(Iconsax.logout, color: Colors.black),
-            onPressed: () async {
-              // TODO: Implementar logout desde auth_service si es necesario
-              // O mostrar diálogo de confirmación
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder:
+                    (context) => AlertDialog(
+                      title: const Text("Cerrar Sesión"),
+                      content: const Text(
+                        "¿Estás seguro de que quieres cerrar sesión?",
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text(
+                            "Cancelar",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            Navigator.pop(context); // Cerrar diálogo
+                            await userProvider.signOut();
+                          },
+                          child: const Text(
+                            "Cerrar Sesión",
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+              );
             },
           ),
         ],

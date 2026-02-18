@@ -88,6 +88,11 @@ class UserProvider extends ChangeNotifier {
         );
   }
 
+  // Logout
+  Future<void> signOut() async {
+    await FirebaseAuth.instance.signOut();
+  }
+
   static UserProvider of(BuildContext context, {bool listen = true}) {
     return Provider.of<UserProvider>(context, listen: listen);
   }

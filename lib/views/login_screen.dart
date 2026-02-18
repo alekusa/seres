@@ -89,20 +89,17 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 // Logo/Branding
                 Container(
-                  width: 120,
-                  height: 120,
+                  width: 300,
+                  height: 300,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6366F1),
+                    //color: const Color(0xFF6366F1),
                     borderRadius: BorderRadius.circular(30),
                   ),
-                  child: const Center(
-                    child: Text(
-                      'SEmmmRES',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  child: Center(
+                    child: Image.asset(
+                      'assets/images/Logo.png',
+                      width: 300,
+                      height: 300,
                     ),
                   ),
                 ),
