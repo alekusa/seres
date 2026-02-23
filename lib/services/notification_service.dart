@@ -86,12 +86,18 @@ class NotificationService {
 
       while (retryCount < maxRetries) {
         try {
+          debugPrint(
+            'Intentando obtener token FCM (intento ${retryCount + 1})...',
+          );
           token = await _fcm.getToken();
           if (token != null) break;
         } catch (e) {
           if (e.toString().contains('apns-token-not-set')) {
             // APNS token not ready, waiting...
             retryCount++;
+            debugPrint(
+              'Token APNS no listo. Reintentando en ${2 * retryCount}s...',
+            );
             await Future.delayed(Duration(seconds: 2 * retryCount));
           } else {
             // Other error getting FCM token

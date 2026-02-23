@@ -90,7 +90,7 @@ class _DetailScreenState extends State<DetailScreen> {
             Stack(
               children: [
                 Hero(
-                  tag: widget.documentSnapshot['image'],
+                  tag: widget.documentSnapshot.id,
                   child: Container(
                     height: MediaQuery.of(context).size.height / 2.1,
                     decoration: BoxDecoration(
@@ -171,27 +171,28 @@ class _DetailScreenState extends State<DetailScreen> {
                   SizedBox(height: 20),
                   Row(
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Nombre de la Meditación",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Descripción e información",
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 10),
-                          Text(
-                            widget.documentSnapshot['info'],
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey.shade600,
+                            SizedBox(height: 10),
+                            Text(
+                              widget.documentSnapshot['info'],
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey.shade600,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                      Spacer(),
                     ],
                   ),
                   SizedBox(height: 10),

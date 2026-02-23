@@ -42,8 +42,9 @@ void main() async {
 
     runApp(const MyApp());
     debugPrint('App lanzada (runApp)');
-  } catch (e) {
+  } catch (e, stack) {
     debugPrint('ERROR CRÍTICO EN MAIN: $e');
+    debugPrint('STACK TRACE: $stack');
   }
 }
 

@@ -30,7 +30,7 @@ class FoodItemsDisplay extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Hero(
-                  tag: documentSnapshot['image'],
+                  tag: documentSnapshot.id,
                   child: Container(
                     width: double.infinity,
                     height: 160,

@@ -19,6 +19,7 @@ class MyAppHomeScreen extends StatefulWidget {
 
 class _MyAppHomeScreenState extends State<MyAppHomeScreen> {
   String category = "Todas";
+  late Future<List> _portadaFuture;
   //for category
   final CollectionReference categoriesItems = FirebaseFirestore.instance
       .collection("App-Category");
@@ -30,6 +31,13 @@ class _MyAppHomeScreenState extends State<MyAppHomeScreen> {
       FirebaseFirestore.instance.collection("Complete-Flutter-App");
   Query get selectedRecipes =>
       category == "Todas" ? allRecipes : filteredRecipes;
+
+  @override
+  void initState() {
+    super.initState();
+    _portadaFuture = PortadaProvider().getPortada();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -56,7 +64,7 @@ class _MyAppHomeScreenState extends State<MyAppHomeScreen> {
                           Padding(
                             padding: EdgeInsets.symmetric(vertical: 20),
                             child: FutureBuilder(
-                              future: PortadaProvider().getPortada(),
+                              future: _portadaFuture,
                               builder: (context, snapshot) {
                                 if (snapshot.connectionState ==
                                     ConnectionState.waiting) {
