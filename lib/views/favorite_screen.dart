@@ -34,7 +34,7 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
           favoriteItems.isEmpty
               ? Center(
                 child: Text(
-                  'No tenes Favoritos',
+                  'Aun no tenes Favoritos Seleccionados',
                   style: TextStyle(
                     fontSize: 18,
                     color: Colors.grey,

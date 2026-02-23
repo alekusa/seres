@@ -3,13 +3,15 @@ import 'package:SERES/Utils/constant.dart';
 import 'package:SERES/Widget/banner.dart';
 import 'package:SERES/Widget/food_items_display.dart';
 import 'package:SERES/Widget/my_icon_button.dart';
+import 'package:SERES/services/notification_service.dart';
 import 'package:SERES/views/view_all_items.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MyAppHomeScreen extends StatefulWidget {
-  const MyAppHomeScreen({super.key});
+  final VoidCallback? onTalleresPressed;
+  const MyAppHomeScreen({super.key, this.onTalleresPressed});
 
   @override
   State<MyAppHomeScreen> createState() => _MyAppHomeScreenState();
@@ -50,7 +52,7 @@ class _MyAppHomeScreenState extends State<MyAppHomeScreen> {
                           headerParts(),
                           //Barra de Busqueda proximamente !
                           //mySearchBar(),
-                          BannerToExplore(),
+                          BannerToExplore(onTap: widget.onTalleresPressed),
                           Padding(
                             padding: EdgeInsets.symmetric(vertical: 20),
                             child: FutureBuilder(
@@ -238,7 +240,20 @@ class _MyAppHomeScreenState extends State<MyAppHomeScreen> {
           ),
         ),
         const Spacer(),
-        MyIconButton(icon: Iconsax.notification, pressed: () {}),
+        MyIconButton(
+          icon: Iconsax.notification,
+          pressed: () async {
+            await NotificationService().requestPermission();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Notificaciones activadas'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+          },
+        ),
       ],
     );
   }

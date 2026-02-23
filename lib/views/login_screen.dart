@@ -131,6 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       if (!_isLogin) ...[
                         TextFormField(
                           controller: _nameController,
+                          autofocus: true,
                           decoration: InputDecoration(
                             labelText: 'Nombre',
                             prefixIcon: const Icon(Icons.person_outline),
@@ -153,6 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Email field
                       TextFormField(
                         controller: _emailController,
+                        autofocus: _isLogin,
                         keyboardType: TextInputType.emailAddress,
                         decoration: InputDecoration(
                           labelText: 'Correo electrónico',

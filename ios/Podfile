@@ -53,70 +53,79 @@ post_install do |installer|
     end
   end
 
-  # Fix for aggregate targets and adding the automated patch script
-  installer.aggregate_targets.each do |aggregate_target|
-    aggregate_target.user_project.native_targets.each do |target|
+  # Fix for Runner target in the user project
+  installer.aggregate_targets.map(&:user_project).uniq.each do |project|
+    runner_target = project.native_targets.find { |t| t.name == 'Runner' }
+    if runner_target
+      phase_name = '[AA] Fix iOS 18 Simulator Dyld'
+      
+      # Robustly remove ALL existing phases with this name
+      runner_target.build_phases.each do |phase|
+        if phase.respond_to?(:name) && phase.name == phase_name
+          runner_target.build_phases.delete(phase)
+        end
+      end
+      
+      puts "Adding Recursive Dyld Patch Build Phase to Runner target..."
+      phase = runner_target.new_shell_script_build_phase(phase_name)
+      
+      phase.shell_script = <<-'SCRIPT'
+        set -e
+        echo "Executing Robust iOS 18 Simulator Dyld Patch..."
+        
+        # 1. Find the Runtime Root Volume dynamically
+        # Usually looking for iOS_XXXXXX
+        RUNTIME_VOL=$(xcrun simctl list runtimes | grep -o "iOS_[A-Z0-9]*" | head -n 1)
+        if [ -z "$RUNTIME_VOL" ]; then
+          echo "Warning: Could not find Simulator Runtime Volume. Patch might be incomplete."
+          RUNTIME_ROOT=""
+        else
+          # Find the .simruntime path inside the volume
+          RUNTIME_PATH_BASE="/Library/Developer/CoreSimulator/Volumes/$RUNTIME_VOL/Library/Developer/CoreSimulator/Profiles/Runtimes"
+          SIM_PATH=$(ls "$RUNTIME_PATH_BASE" | grep ".simruntime" | head -n 1)
+          RUNTIME_ROOT="$RUNTIME_PATH_BASE/$SIM_PATH/Contents/Resources/RuntimeRoot"
+          echo "Found Runtime Root: $RUNTIME_ROOT"
+        fi
+
+        # Common search paths for Swift libraries in iOS 18 Simulators
+        CRYPTER_PATH="$RUNTIME_ROOT/System/Cryptexes/OS/usr/lib/swift"
+        SWIFT_PATH="$RUNTIME_ROOT/usr/lib/swift"
+
+        # Find all Mach-O binaries in the app bundle
+        find "$TARGET_BUILD_DIR" -type f -maxdepth 6 | while read -r BIN; do
+          if file "$BIN" | grep -q "Mach-O"; then
+            echo "Patching: $(basename "$BIN")"
+            
+            # Unconditionally add search paths (RPATHs)
+            [ -d "$CRYPTER_PATH" ] && install_name_tool -add_rpath "$CRYPTER_PATH" "$BIN" 2>/dev/null || true
+            [ -d "$SWIFT_PATH" ] && install_name_tool -add_rpath "$SWIFT_PATH" "$BIN" 2>/dev/null || true
+            install_name_tool -add_rpath "/usr/lib/swift" "$BIN" 2>/dev/null || true
+            install_name_tool -add_rpath "@executable_path/Frameworks" "$BIN" 2>/dev/null || true
+            install_name_tool -add_rpath "@loader_path/Frameworks" "$BIN" 2>/dev/null || true
+            
+            # Convert absolute Swift system paths to @rpath
+            otool -L "$BIN" | grep "/usr/lib/swift/" | awk '{print $1}' | while read -r lib; do
+               new_lib=$(echo "$lib" | sed 's|/usr/lib/swift/|@rpath/|')
+               echo "  Mapping $lib -> $new_lib"
+               install_name_tool -change "$lib" "$new_lib" "$BIN" 2>/dev/null || true
+            done
+            
+            # Re-sign the binary after modification
+            codesign -f -s - "$BIN" 2>/dev/null || true
+          fi
+        done
+        echo "Robust dyld patch finished."
+      SCRIPT
+    end
+    
+    # Also apply general build settings for all native targets
+    project.native_targets.each do |target|
       target.build_configurations.each do |config|
         config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
       end
-
-      # Add "Run Script" phase to patch the dyld issues automatically in Debug modes
-      if target.name == 'Runner'
-        phase_name = '[AA] Fix iOS 18 Simulator Dyld'
-        target.shell_script_build_phases.delete_if { |p| p.name == phase_name }
-        
-        puts "Adding Recursive Dyld Patch Build Phase to Runner target..."
-        phase = target.new_shell_script_build_phase(phase_name)
-        
-        phase.shell_script = <<-'SCRIPT'
-          set -e
-          echo "Executing Recursive iOS 18 Simulator Dyld Patch..."
-          
-          # Find the runtime volume dynamically
-          RUNTIME_VOL=$(xcrun simctl list runtimes | grep -o "iOS_[A-Z0-9]*" | head -n 1)
-          CRYPTER_PATH=""
-          if [ -n "$RUNTIME_VOL" ]; then
-            CRYPTER_PATH="/Library/Developer/CoreSimulator/Volumes/$RUNTIME_VOL/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 18.4.simruntime/Contents/Resources/RuntimeRoot/System/Cryptexes/OS/usr/lib/swift"
-          fi
-
-          # Find all Mach-O binaries in the app bundle (app root and Frameworks)
-          # We search up to 4 levels deep to cover Frameworks/Plugin.framework/Plugin
-          find "$TARGET_BUILD_DIR" -type f -maxdepth 6 | while read -r BIN; do
-            if file "$BIN" | grep -q "Mach-O"; then
-              echo "Inspecting $BIN..."
-              
-              # 1. Convert absolute Swift paths to @rpath
-              otool -L "$BIN" | grep "/usr/lib/swift/" | awk '{print $1}' > libs_to_patch.txt || true
-              if [ -s libs_to_patch.txt ]; then
-                echo "Patching absolute Swift paths in $(basename "$BIN")..."
-                while read -r lib; do
-                  if [ ! -z "$lib" ]; then
-                    new_lib=$(echo "$lib" | sed 's|/usr/lib/swift/|@rpath/|')
-                    echo "  Mapping $lib -> $new_lib"
-                    install_name_tool -change "$lib" "$new_lib" "$BIN"
-                  fi
-                done < libs_to_patch.txt
-                
-                # 2. Add RPATHs if we patched anything
-                if [ -d "$CRYPTER_PATH" ]; then
-                  echo "  Adding dynamic RPATH: $CRYPTER_PATH"
-                  install_name_tool -add_rpath "$CRYPTER_PATH" "$BIN" || true
-                fi
-                install_name_tool -add_rpath "/usr/lib/swift" "$BIN" || true
-                install_name_tool -add_rpath "@executable_path/Frameworks" "$BIN" || true
-                install_name_tool -add_rpath "@loader_path/Frameworks" "$BIN" || true
-                
-                # 3. Re-sign
-                codesign -f -s - "$BIN"
-              fi
-              rm -f libs_to_patch.txt
-            fi
-          done
-          echo "Recursive dyld patch finished."
-        SCRIPT
-      end
     end
-    aggregate_target.user_project.save
+    
+    project.save
   end
 end

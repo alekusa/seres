@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'package:SERES/Provider/user_provider.dart';
 import 'package:SERES/Utils/constant.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart'
     hide PlayerState;
@@ -15,143 +18,449 @@ class UserScreen extends StatefulWidget {
 }
 
 class _UserScreenState extends State<UserScreen> {
+  bool _isEditing = false;
+  final _formKey = GlobalKey<FormState>();
+
+  late TextEditingController _nameController;
+  late TextEditingController _addressController;
+  late TextEditingController _phoneController;
+  String? _selectedBirthDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController();
+    _addressController = TextEditingController();
+    _phoneController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _addressController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  void _initFields(UserProvider provider) {
+    final user = provider.currentUser;
+    final userData = provider.userData;
+
+    _nameController.text = user?.displayName ?? "";
+    _addressController.text = userData?['address'] ?? "";
+    _phoneController.text = userData?['phone'] ?? "";
+    _selectedBirthDate = userData?['birthDate'];
+  }
+
+  Future<void> _pickImage(UserProvider provider) async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await showModalBottomSheet<XFile?>(
+      context: context,
+      builder:
+          (context) => SafeArea(
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: const Icon(Iconsax.camera),
+                  title: const Text('Tomar Foto'),
+                  onTap: () async {
+                    final result = await picker.pickImage(
+                      source: ImageSource.camera,
+                    );
+                    Navigator.pop(context, result);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Iconsax.gallery),
+                  title: const Text('Galería'),
+                  onTap: () async {
+                    final result = await picker.pickImage(
+                      source: ImageSource.gallery,
+                    );
+                    Navigator.pop(context, result);
+                  },
+                ),
+                if (provider.currentUser?.providerData.any(
+                      (info) => info.providerId == 'google.com',
+                    ) ??
+                    false)
+                  ListTile(
+                    leading: const Icon(Icons.login, color: Colors.blue),
+                    title: const Text('Usar foto de Google'),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await provider.syncWithGooglePhoto();
+                    },
+                  ),
+              ],
+            ),
+          ),
+    );
+
+    if (image != null) {
+      await provider.uploadProfileImage(File(image.path));
+    }
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().subtract(const Duration(days: 365 * 20)),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: kprimaryColor,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedBirthDate = DateFormat('dd/MM/yyyy').format(picked);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
-    final user = userProvider.currentUser;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: kbackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          "Perfil",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        title: Text(
+          _isEditing ? "Editar Perfil" : "Mi Perfil",
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Iconsax.logout, color: Colors.black),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder:
-                    (context) => AlertDialog(
-                      title: const Text("Cerrar Sesión"),
-                      content: const Text(
-                        "¿Estás seguro de que quieres cerrar sesión?",
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text(
-                            "Cancelar",
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            Navigator.pop(context); // Cerrar diálogo
-                            await userProvider.signOut();
-                          },
-                          child: const Text(
-                            "Cerrar Sesión",
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-              );
-            },
-          ),
+          if (!_isEditing)
+            IconButton(
+              icon: const Icon(Iconsax.logout, color: Colors.black),
+              onPressed: () => _showLogoutDialog(userProvider),
+            )
+          else
+            TextButton(
+              onPressed: () => setState(() => _isEditing = false),
+              child: const Text(
+                "Cancelar",
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
         ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Header del Usuario
-            Container(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: kprimaryColor.withOpacity(0.1),
-                    child: Text(
-                      user?.displayName?.substring(0, 1).toUpperCase() ?? "U",
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: kprimaryColor,
-                      ),
+            _buildHeader(userProvider),
+            const SizedBox(height: 20),
+            if (_isEditing)
+              _buildEditForm(userProvider)
+            else ...[
+              if (userProvider.isVip)
+                _buildVipContent(userProvider)
+              else
+                _buildLockedContent(),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(UserProvider provider) {
+    final user = provider.currentUser;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 4),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundColor: kprimaryColor.withOpacity(0.1),
+                  backgroundImage:
+                      user?.photoURL != null && user!.photoURL!.isNotEmpty
+                          ? NetworkImage(user.photoURL!)
+                          : null,
+                  child:
+                      user?.photoURL == null || user!.photoURL!.isEmpty
+                          ? Text(
+                            user?.displayName?.substring(0, 1).toUpperCase() ??
+                                "U",
+                            style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: kprimaryColor,
+                            ),
+                          )
+                          : null,
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: () => _pickImage(provider),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: kprimaryColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Icon(
+                      Iconsax.camera,
+                      color: Colors.white,
+                      size: 18,
                     ),
                   ),
-                  const SizedBox(width: 15),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user?.displayName ?? "Usuario",
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        user?.email ?? "",
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                      ),
-                      const SizedBox(height: 5),
-                      // Badge de VIP
-                      if (userProvider.isVip)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.amber[100],
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: Colors.amber),
-                          ),
-                          child: Row(
-                            children: const [
-                              Icon(
-                                Iconsax.crown,
-                                size: 14,
-                                color: Colors.amber,
-                              ),
-                              SizedBox(width: 4),
-                              Text(
-                                "PREMIUM",
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.amber,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 15),
+          Text(
+            user?.displayName ?? "Usuario",
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            user?.email ?? "",
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 10),
+          if (provider.isVip)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.amber[100],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.amber),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(Iconsax.crown, size: 16, color: Colors.amber),
+                  SizedBox(width: 6),
+                  Text(
+                    "MIEMBRO PREMIUM",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber,
+                    ),
                   ),
                 ],
               ),
             ),
+          const SizedBox(height: 15),
+          if (!_isEditing)
+            ElevatedButton.icon(
+              onPressed: () {
+                _initFields(provider);
+                setState(() => _isEditing = true);
+              },
+              icon: const Icon(Iconsax.edit, size: 18),
+              label: const Text("Editar Perfil"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kprimaryColor,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
-            const Divider(),
-
-            // Contenido Principal
-            if (userProvider.isVip)
-              _buildVipContent(userProvider)
-            else
-              _buildLockedContent(),
+  Widget _buildEditForm(UserProvider provider) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Información Personal",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            _buildTextField(
+              controller: _nameController,
+              label: "Nombre a mostrar",
+              icon: Iconsax.user,
+              validator:
+                  (value) =>
+                      value == null || value.isEmpty
+                          ? "Ingresa tu nombre"
+                          : null,
+            ),
+            const SizedBox(height: 15),
+            GestureDetector(
+              onTap: () => _selectDate(context),
+              child: AbsorbPointer(
+                child: _buildTextField(
+                  controller: TextEditingController(text: _selectedBirthDate),
+                  label: "Fecha de nacimiento (Opcional)",
+                  icon: Iconsax.calendar_1,
+                ),
+              ),
+            ),
+            const SizedBox(height: 15),
+            _buildTextField(
+              controller: _addressController,
+              label: "Dirección (Opcional)",
+              icon: Iconsax.location,
+            ),
+            const SizedBox(height: 15),
+            _buildTextField(
+              controller: _phoneController,
+              label: "Teléfono (Opcional)",
+              icon: Iconsax.mobile,
+              keyboardType: TextInputType.phone,
+            ),
+            const SizedBox(height: 30),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: () async {
+                  if (_formKey.currentState!.validate()) {
+                    await provider.updateProfile(
+                      displayName: _nameController.text,
+                      birthDate: _selectedBirthDate,
+                      address: _addressController.text,
+                      phone: _phoneController.text,
+                    );
+                    setState(() => _isEditing = false);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Perfil actualizado correctamente"),
+                      ),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kprimaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  "Guardar Cambios",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    String? Function(String?)? validator,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return TextFormField(
+      controller: controller,
+      validator: validator,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: kprimaryColor, size: 20),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: BorderSide(color: Colors.grey[300]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: const BorderSide(color: kprimaryColor, width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.grey[50],
+      ),
+    );
+  }
+
+  void _showLogoutDialog(UserProvider provider) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: const Text("Cerrar Sesión"),
+            content: const Text("¿Estás seguro de que quieres cerrar sesión?"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  "Cancelar",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await provider.signOut();
+                },
+                child: const Text(
+                  "Cerrar Sesión",
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
     );
   }
 

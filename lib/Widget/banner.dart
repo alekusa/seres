@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class BannerToExplore extends StatefulWidget {
-  const BannerToExplore({super.key});
+  final VoidCallback? onTap;
+  const BannerToExplore({super.key, this.onTap});
 
   @override
   State<BannerToExplore> createState() => _BannerToExploreState();
@@ -56,8 +57,8 @@ class _BannerToExploreState extends State<BannerToExplore> {
                 ),
                 SizedBox(height: 10),
                 ElevatedButton(
-                  onPressed: () {},
-                  child: Text(
+                  onPressed: widget.onTap,
+                  child: const Text(
                     "Talleres",
                     style: TextStyle(
                       fontSize: 18,

@@ -8,20 +8,22 @@ class FavoriteProvider extends ChangeNotifier {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  
+
   List<String> get favorites => _favoriteIds;
 
   FavoriteProvider() {
-    loadFavorites();
+    _auth.authStateChanges().listen((user) {
+      loadFavorites();
+    });
   }
-  
+
   // Get user-specific favorites collection reference
   CollectionReference? get _favoritesCollection {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return null;
     return _firestore.collection('users').doc(userId).collection('favorites');
   }
-  
+
   void toggleFavorite(DocumentSnapshot product) async {
     String productId = product.id;
     if (_favoriteIds.contains(productId)) {
@@ -45,7 +47,7 @@ class FavoriteProvider extends ChangeNotifier {
         print('User not authenticated');
         return;
       }
-      
+
       await collection.doc(productId).set({
         'isFavorite': true,
         'addedAt': FieldValue.serverTimestamp(),
@@ -62,7 +64,7 @@ class FavoriteProvider extends ChangeNotifier {
         print('User not authenticated');
         return;
       }
-      
+
       await collection.doc(productId).delete();
     } catch (e) {
       print(e.toString());
@@ -77,7 +79,7 @@ class FavoriteProvider extends ChangeNotifier {
         notifyListeners();
         return;
       }
-      
+
       QuerySnapshot snapshot = await collection.get();
       _favoriteIds = snapshot.docs.map((doc) => doc.id).toList();
     } catch (e) {

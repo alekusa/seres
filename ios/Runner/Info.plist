@@ -50,6 +50,12 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Esta aplicación necesita acceso a la cámara para que puedas tomar una foto de perfil.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Esta aplicación necesita acceso a tu galería para que puedas elegir una foto de perfil.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Esta aplicación necesita acceso al micrófono si decides grabar un video para tu perfil.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -59,8 +65,14 @@
 			<array>
 				<!-- TODO: Reemplaza esto con el valor de REVERSED_CLIENT_ID de tu GoogleService-Info.plist -->
 				<string>com.googleusercontent.apps.5694579953-kg8kgcbi2t3kae2h0e2nafidjfmqhs03</string>
+				<string>com.example.demo</string>
 			</array>
 		</dict>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
 	</array>
 </dict>
 </plist>

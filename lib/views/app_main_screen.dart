@@ -19,7 +19,13 @@ class _AppMainScreenState extends State<AppMainScreen> {
   @override
   void initState() {
     page = [
-      const MyAppHomeScreen(),
+      MyAppHomeScreen(
+        onTalleresPressed: () {
+          setState(() {
+            selectedIndex = 2;
+          });
+        },
+      ),
       FavoriteScreen(),
       FehcasTaller(),
       const UserScreen(),

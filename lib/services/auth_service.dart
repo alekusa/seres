@@ -1,10 +1,19 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io' show Platform;
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    clientId:
+        kIsWeb || (Platform.isIOS || Platform.isMacOS)
+            ? '5694579953-kg8kgcbi2t3kae2h0e2nafidjfmqhs03.apps.googleusercontent.com'
+            : null,
+    serverClientId:
+        '5694579953-ctebaq559dt48mq0ao0q8gn8cgdvarlu.apps.googleusercontent.com',
+  );
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Auth state changes stream
@@ -27,19 +36,21 @@ class AuthService {
   }
 
   // Sign up with Email and Password
-  Future<UserCredential?> signUpWithEmail(String email, String password, String displayName) async {
+  Future<UserCredential?> signUpWithEmail(
+    String email,
+    String password,
+    String displayName,
+  ) async {
     try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(email: email, password: password);
+
       // Update display name
       await userCredential.user?.updateDisplayName(displayName);
-      
+
       // Create user profile in Firestore
       await _createUserProfile(userCredential.user!);
-      
+
       return userCredential;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
@@ -51,16 +62,16 @@ class AuthService {
   // Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
     try {
+      debugPrint('Iniciando Google Sign-In...');
       // Trigger the authentication flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      
+
       if (googleUser == null) {
-        // User cancelled the sign-in
         return null;
       }
 
-      // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       // Create a new credential
       final credential = GoogleAuthProvider.credential(
@@ -68,18 +79,24 @@ class AuthService {
         idToken: googleAuth.idToken,
       );
 
-      // Sign in to Firebase with the Google credential
-      UserCredential userCredential = await _auth.signInWithCredential(credential);
-      
-      // Create user profile if new user
+      UserCredential userCredential = await _auth.signInWithCredential(
+        credential,
+      );
+      debugPrint(
+        'Inicio de sesión en Firebase exitoso: ${userCredential.user?.uid}',
+      );
+
       if (userCredential.additionalUserInfo?.isNewUser ?? false) {
+        debugPrint('Creando perfil para nuevo usuario...');
         await _createUserProfile(userCredential.user!);
       }
-      
+
       return userCredential;
     } on FirebaseAuthException catch (e) {
+      debugPrint('ERROR AUTH FIREBASE: ${e.code} - ${e.message}');
       throw _handleAuthException(e);
     } catch (e) {
+      debugPrint('ERROR GENERAL GOOGLE SIGN IN: $e');
       throw 'Error al iniciar sesión con Google: ${e.toString()}';
     }
   }
@@ -100,9 +117,7 @@ class AuthService {
     await _auth.signOut();
   }
 
-  // Handle Firebase Auth exceptions
   String _handleAuthException(FirebaseAuthException e) {
-    print('AUTH EXCEPTION: ${e.code}, ${e.message}, ${e.plugin}, ${e.credential}, ${e.email}'); // Added for debug
     switch (e.code) {
       case 'user-not-found':
         return 'No se encontró ningún usuario con ese correo electrónico.';
