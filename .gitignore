@@ -50,3 +50,13 @@ app.*.map.json
 lib/firebase_options.dart
 .env
 secrets.dart
+# Signing keys
+android/key.properties
+android/app/upload-keystore.jks
+*.jks
+*.keystore
+android/app/build/
+android/.gradle/
+ios/Pods/
+ios/.symlinks/
+macos/Flutter/ephemeral/

@@ -203,7 +203,7 @@
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				70239DE1D050AA655100B360 /* [CP] Copy Pods Resources */,
 				078E7BDCD3CF3DCA508779BC /* [CP] Embed Pods Frameworks */,
-				CB3C5D34CE475EC7B4E4B686 /* [AA] Fix iOS 18 Simulator Dyld */,
+				6F150BECEAE2F6BB37B070FE /* [AA] Fix iOS 18 Simulator Dyld */,
 			);
 			buildRules = (
 			);
@@ -309,6 +309,24 @@
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
 		};
+		6F150BECEAE2F6BB37B070FE /* [AA] Fix iOS 18 Simulator Dyld */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "[AA] Fix iOS 18 Simulator Dyld";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "        set -e\n        echo \"Executing Robust iOS 18 Simulator Dyld Patch...\"\n        \n        # 1. Find the Runtime Root Volume dynamically\n        # Usually looking for iOS_XXXXXX\n        RUNTIME_VOL=$(xcrun simctl list runtimes | grep -o \"iOS_[A-Z0-9]*\" | head -n 1)\n        if [ -z \"$RUNTIME_VOL\" ]; then\n          echo \"Warning: Could not find Simulator Runtime Volume. Patch might be incomplete.\"\n          RUNTIME_ROOT=\"\"\n        else\n          # Find the .simruntime path inside the volume\n          RUNTIME_PATH_BASE=\"/Library/Developer/CoreSimulator/Volumes/$RUNTIME_VOL/Library/Developer/CoreSimulator/Profiles/Runtimes\"\n          SIM_PATH=$(ls \"$RUNTIME_PATH_BASE\" | grep \".simruntime\" | head -n 1)\n          RUNTIME_ROOT=\"$RUNTIME_PATH_BASE/$SIM_PATH/Contents/Resources/RuntimeRoot\"\n          echo \"Found Runtime Root: $RUNTIME_ROOT\"\n        fi\n\n        # Common search paths for Swift libraries in iOS 18 Simulators\n        CRYPTER_PATH=\"$RUNTIME_ROOT/System/Cryptexes/OS/usr/lib/swift\"\n        SWIFT_PATH=\"$RUNTIME_ROOT/usr/lib/swift\"\n\n        # Find all Mach-O binaries in the app bundle\n        find \"$TARGET_BUILD_DIR\" -type f -maxdepth 6 | while read -r BIN; do\n          if file \"$BIN\" | grep -q \"Mach-O\"; then\n            echo \"Patching: $(basename \"$BIN\")\"\n            \n            # Unconditionally add search paths (RPATHs)\n            [ -d \"$CRYPTER_PATH\" ] && install_name_tool -add_rpath \"$CRYPTER_PATH\" \"$BIN\" 2>/dev/null || true\n            [ -d \"$SWIFT_PATH\" ] && install_name_tool -add_rpath \"$SWIFT_PATH\" \"$BIN\" 2>/dev/null || true\n            install_name_tool -add_rpath \"/usr/lib/swift\" \"$BIN\" 2>/dev/null || true\n            install_name_tool -add_rpath \"@executable_path/Frameworks\" \"$BIN\" 2>/dev/null || true\n            install_name_tool -add_rpath \"@loader_path/Frameworks\" \"$BIN\" 2>/dev/null || true\n            \n            # Convert absolute Swift system paths to @rpath\n            otool -L \"$BIN\" | grep \"/usr/lib/swift/\" | awk '{print $1}' | while read -r lib; do\n               new_lib=$(echo \"$lib\" | sed 's|/usr/lib/swift/|@rpath/|')\n               echo \"  Mapping $lib -> $new_lib\"\n               install_name_tool -change \"$lib\" \"$new_lib\" \"$BIN\" 2>/dev/null || true\n            done\n            \n            # Re-sign the binary after modification\n            codesign -f -s - \"$BIN\" 2>/dev/null || true\n          fi\n        done\n        echo \"Robust dyld patch finished.\"\n";
+		};
 		70239DE1D050AA655100B360 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -362,24 +380,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
-		};
-		CB3C5D34CE475EC7B4E4B686 /* [AA] Fix iOS 18 Simulator Dyld */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "[AA] Fix iOS 18 Simulator Dyld";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "        set -e\n        echo \"Executing Robust iOS 18 Simulator Dyld Patch...\"\n        \n        # 1. Find the Runtime Root Volume dynamically\n        # Usually looking for iOS_XXXXXX\n        RUNTIME_VOL=$(xcrun simctl list runtimes | grep -o \"iOS_[A-Z0-9]*\" | head -n 1)\n        if [ -z \"$RUNTIME_VOL\" ]; then\n          echo \"Warning: Could not find Simulator Runtime Volume. Patch might be incomplete.\"\n          RUNTIME_ROOT=\"\"\n        else\n          # Find the .simruntime path inside the volume\n          RUNTIME_PATH_BASE=\"/Library/Developer/CoreSimulator/Volumes/$RUNTIME_VOL/Library/Developer/CoreSimulator/Profiles/Runtimes\"\n          SIM_PATH=$(ls \"$RUNTIME_PATH_BASE\" | grep \".simruntime\" | head -n 1)\n          RUNTIME_ROOT=\"$RUNTIME_PATH_BASE/$SIM_PATH/Contents/Resources/RuntimeRoot\"\n          echo \"Found Runtime Root: $RUNTIME_ROOT\"\n        fi\n\n        # Common search paths for Swift libraries in iOS 18 Simulators\n        CRYPTER_PATH=\"$RUNTIME_ROOT/System/Cryptexes/OS/usr/lib/swift\"\n        SWIFT_PATH=\"$RUNTIME_ROOT/usr/lib/swift\"\n\n        # Find all Mach-O binaries in the app bundle\n        find \"$TARGET_BUILD_DIR\" -type f -maxdepth 6 | while read -r BIN; do\n          if file \"$BIN\" | grep -q \"Mach-O\"; then\n            echo \"Patching: $(basename \"$BIN\")\"\n            \n            # Unconditionally add search paths (RPATHs)\n            [ -d \"$CRYPTER_PATH\" ] && install_name_tool -add_rpath \"$CRYPTER_PATH\" \"$BIN\" 2>/dev/null || true\n            [ -d \"$SWIFT_PATH\" ] && install_name_tool -add_rpath \"$SWIFT_PATH\" \"$BIN\" 2>/dev/null || true\n            install_name_tool -add_rpath \"/usr/lib/swift\" \"$BIN\" 2>/dev/null || true\n            install_name_tool -add_rpath \"@executable_path/Frameworks\" \"$BIN\" 2>/dev/null || true\n            install_name_tool -add_rpath \"@loader_path/Frameworks\" \"$BIN\" 2>/dev/null || true\n            \n            # Convert absolute Swift system paths to @rpath\n            otool -L \"$BIN\" | grep \"/usr/lib/swift/\" | awk '{print $1}' | while read -r lib; do\n               new_lib=$(echo \"$lib\" | sed 's|/usr/lib/swift/|@rpath/|')\n               echo \"  Mapping $lib -> $new_lib\"\n               install_name_tool -change \"$lib\" \"$new_lib\" \"$BIN\" 2>/dev/null || true\n            done\n            \n            # Re-sign the binary after modification\n            codesign -f -s - \"$BIN\" 2>/dev/null || true\n          fi\n        done\n        echo \"Robust dyld patch finished.\"\n";
 		};
 		F296DBE3B01EFF5DEE723EF5 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -592,7 +592,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = AppIcon;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -649,7 +649,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = AppIcon;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
